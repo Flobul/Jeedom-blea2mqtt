@@ -1,0 +1,60 @@
+{
+	"commands": [{
+		"name": "Connexion SSH",
+		"type": "info",
+		"subtype": "binary",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "sshStatus"
+	}, {
+		"name": "Statut du service",
+		"type": "info",
+		"subtype": "binary",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "serviceStatus"
+	}, {
+		"name": "Démarrer le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "startService"
+	}, {
+		"name": "Arrêter le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "stopService"
+	}, {
+		"name": "Redémarrer le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "restartService"
+	}, {
+		"name": "Activer le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "activateService"
+	}, {
+		"name": "Désactiver le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "deactivateService"
+	},  {
+		"name": "Créer le service",
+		"type": "action",
+		"subtype": "other",
+		"isVisible": 1,
+		"isHistorized": 1,
+		"logicalId": "createService"
+	}
+  ]
+}
