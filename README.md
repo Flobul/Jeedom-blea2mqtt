@@ -41,6 +41,13 @@ ou entrer manuellement les informations :
 
 Les périphériques BLE doivent être configurés dans le plugin jMQTT, MQTT ou MQTT Manager.
 
+### Configuration Tasmota
+
+Pour créer un réseau maillé et diffuser sur le même topic, les appareils sous Tasmota ont besoin d'avoir l'option BLE : mi32option6 à 1.
+Il suffit de créer une commande action sur l'appareil, avec en topic "cmnd/mi32option6" avec la valeur à 1 et de lancer l'action.
+Ou d'entrer dans les logs de la page Web de Tasmota la commande "mi32option6 1".
+Cela aura pour rôle de demander au Tasmota de publier pour chaque périphérique tasmota sur le topic "tasmota_ble".
+
 ## Utilisation
 
 Une fois le plugin blea2mqtt configuré et le service activé, les informations de vos équipements BLEA seront envoyées sur le broker MQTT sur le topic configuré ("tasmota_ble", par défaut).
