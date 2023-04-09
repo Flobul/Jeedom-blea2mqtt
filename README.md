@@ -2,18 +2,23 @@
 
 Le plugin blea2mqtt permet d'installer le paquet ["blea2mqtt"](https://github.com/Flobul/blea2mqtt) sur des machines distantes accessibles en SSH et d'intégrer les périphériques Bluetooth Low Energy (BLE) dans le système Jeedom en utilisant le protocole MQTT pour communiquer avec les périphériques BLE.
 Le but principal étant d'uniformiser et d'automatiser l'installation pour créer des antennes BLEA qui soient compatibles avec les publications Tasmota.
+
 Le plugin ne contient que les équipements "antenne" et les commandes permettant de relancer le service blea2mqtt.
-Pour récupérer les informations des sondes et autres périphérique BLE, il est nécessaire d'utiliser un plugin gérant les broker MQTT.
+
+Pour récupérer les informations des sondes et autres périphérique BLE, il est nécessaire d'utiliser un plugin gérant les brokers MQTT.
 
 ## Configuration requise
 
-Jeedom version 4.2.0 ou supérieure
-Un broker MQTT fonctionnel (par exemple, Mosquitto, ou l'un des 3 plugins Jeedom : jMQTT, MQTT ou mqtt2).
+- Jeedom version 4.2.0 ou supérieure.
+- Un broker MQTT fonctionnel (par exemple, Mosquitto, ou l'un des 3 plugins Jeedom : jMQTT, MQTT ou mqtt2).
+- Une machine "antenne" sous Linux ou MacOS.
 
 ## Fonctionnalités
+
 - Découverte automatique des périphériques BLE. (dans la limite des périphériques reconnus par ["blea2mqtt"](https://github.com/Flobul/blea2mqtt))
 - Envoyer les informations de vos équipements BLEA à un broker MQTT.
 - Possibilité d'activer/désactiver le service MQTT directement depuis le plugin
+- Prise en charge des systèmes Linux et macOS
 
 ## Installation
 
@@ -44,13 +49,24 @@ Les périphériques BLE doivent être configurés dans le plugin jMQTT, MQTT ou 
 ### Configuration Tasmota
 
 Pour créer un réseau maillé et diffuser sur le même topic, les appareils sous Tasmota ont besoin d'avoir l'option BLE : mi32option6 à 1.
+
 Il suffit de créer une commande action sur l'appareil, avec en topic "cmnd/mi32option6" avec la valeur à 1 et de lancer l'action.
+
 Ou d'entrer dans les logs de la page Web de Tasmota la commande "mi32option6 1".
+
 Cela aura pour rôle de demander au Tasmota de publier pour chaque périphérique tasmota sur le topic "tasmota_ble".
 
 ## Utilisation
 
 Une fois le plugin blea2mqtt configuré et le service activé, les informations de vos équipements BLEA seront envoyées sur le broker MQTT sur le topic configuré ("tasmota_ble", par défaut).
+
+## Contribuer
+
+Si vous souhaitez contribuer au développement de ce plugin, vous pouvez :
+
+- Créer des "issues" pour signaler des bugs ou proposer des améliorations.
+- Proposer des "pull requests" pour ajouter des fonctionnalités ou corriger des bugs.
+
 
 ## Licence
 
