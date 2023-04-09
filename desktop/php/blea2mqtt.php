@@ -13,7 +13,7 @@ span.hiddenAsCard i.fas.status-circle				{ margin-right:6px; }
 span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;position: absolute;margin-left: 20px; }
 
 </style>
-  
+
 <div class="row row-overflow">
 	<!-- Page d'accueil du plugin -->
 	<div class="col-xs-12 eqLogicThumbnailDisplay">
@@ -31,7 +31,7 @@ span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;pos
 				<span>{{Configuration}}</span>
 			</div>
 		</div>
-		<legend><i class="fas fa-table"></i> {{Mes blea2mqtts}}</legend>
+		<legend><i class="fas fa-broadcast-tower"></i> {{Mes antennes blea2mqtt}}</legend>
 		<?php
 		if (count($eqLogics) == 0) {
 			echo '<br><div class="text-center" style="font-size:1.2em;font-weight:bold;">{{Aucun équipement blea2mqtt trouvé, cliquer sur "Ajouter" pour commencer}}</div>';
@@ -220,7 +220,7 @@ span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;pos
 									<span class="eqLogicAttr label label-info" data-l1key="status" data-l2key="lastReceivedFrom"></span>
 								</div>
 							  </div>
-                            
+
                               <div class="form-group">
 								<label class="col-sm-4 control-label">{{Système d'exploitation}}</label>
 								<div class="col-sm-6">
