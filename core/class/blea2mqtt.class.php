@@ -37,13 +37,13 @@ class blea2mqtt extends eqLogic {
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.20';
+    public static $_pluginVersion = '0.30';
 
     /**
      * URL du dépôt GitHub pour le projet Flobul/Blea2Mqtt.
      */
     const GITHUB_FLOBUL_BLEA2MQTT  = 'https://github.com/Flobul/blea2mqtt.git';
-  
+
     /**
      * URL du dépôt GitHub pour le projet BitKill/Blea2Mqtt.
      */
@@ -77,10 +77,10 @@ class blea2mqtt extends eqLogic {
 
         $user = $eqLogic->getConfiguration('user');
         $pass = $eqLogic->getConfiguration('pwd');
-      
+
         $system = $eqLogic->sendRequest('CMD', array('uname -s'));
         $hostname = $eqLogic->sendRequest('CMD', array('hostname'));
-      
+
         $eqLogic->setConfiguration('hostname', $hostname['result'][0]);
         $eqLogic->setConfiguration('system', $system['result'][0]);
         $eqLogic->setConfiguration('lastDependancyInstall', date('Y-m-d H:i:s'));
@@ -167,11 +167,7 @@ class blea2mqtt extends eqLogic {
      * @return void
      */
     public function postUpdate() {
-        if ($this->getIsEnable() == 1) {
-            $this->checkMQTTPublish();
-        } else {
-            $this->removeListener();
-        }
+
     }
 
     /**
@@ -209,6 +205,7 @@ class blea2mqtt extends eqLogic {
      * @return void
      */
     public function preRemove() {
+        self::removeListener(array('id' => intval($this->getId())));
     }
 
     /**
@@ -229,7 +226,7 @@ class blea2mqtt extends eqLogic {
     public function decrypt() {
         $this->setConfiguration('pwd', utils::decrypt($this->getConfiguration('pwd')));
     }
-  
+
     /**
      * Chiffre le mot de passe stocké dans la configuration de l'objet en utilisant l'outil de chiffrement 'utils::encrypt'.
      *
@@ -307,7 +304,7 @@ class blea2mqtt extends eqLogic {
      * @return string la commande à exécuter avec ou sans sudo
      */
     protected function getCmdSudo($cmd, $_sudo) {
-        if ($this->getConfiguration('user', 'root') != 'root' && $_sudo) { // si non root ou sudo=true 
+        if ($this->getConfiguration('user', 'root') != 'root' && $_sudo) { // si non root ou sudo=true
             return "echo '".$this->getConfiguration('pwd')."' | sudo -S $cmd";
         } else {
             return $cmd;
@@ -365,6 +362,7 @@ class blea2mqtt extends eqLogic {
                         //stream_set_chunk_size($stream, 1024); // Définir la taille maximale de chaque chunk de données
 		                exec('sudo /bin/echo -e "--- $(/bin/date +\'%F %T\'):\n" >> ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
 		                exec('sudo /bin/echo "' . $user . '@' . $ip . ':~' . (($user != 'root' || $_sudo)?'#':'$') . ' ' . $cmd . '" >> ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
+                        $stre = '';
                         while($line = fgets($stream)) {
 					    //log::add(__CLASS__, 'info', __FUNCTION__ . __(' Commande par SSH1 : ',__FILE__) . $line);
                             flush();
@@ -493,7 +491,7 @@ class blea2mqtt extends eqLogic {
 
     /**
      * Retourne la commande "launchctl" à exécuter en fonction de l'action passée en paramètre.
-     * 
+     *
      * @param string $action L'action à effectuer, parmi : 'load', 'unload', 'start', 'stop', 'status', 'enable', 'disable', 'print', 'bootout', 'bootstrap', 'kickstart'.
      * @return string La commande "launchctl" à exécuter.
      * @throws Exception Si l'action passée en paramètre n'est pas reconnue.
@@ -532,24 +530,28 @@ class blea2mqtt extends eqLogic {
 
     /**
      * Retourne l'état du service "blea2mqtt" en fonction du système d'exploitation.
-     * 
+     *
      * @param string $_distrib Le nom du système d'exploitation, parmi : 'Linux', 'Darwin'.
      * @return void
      */
     public function getServiceStatus($_distrib) {
-      
+
         if ($_distrib == 'Linux') {
             $cmd = self::getSystemctlCommand('status');
             $result = $this->sendRequest('CMD', array($cmd));
-            $this->checkAndUpdateCmd('sshStatus', $result['connected']);
-            preg_match('/Active:\s*(\S+\s+\S+)/', $result['result'][$cmd], $matches_active);
-            preg_match('/since (\w{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \w{3});/', $result['result'][$cmd], $matches_start_time);
-            preg_match('/Loaded:.*\/blea2mqtt\.service; ([^;]+);/', $result['result'][$cmd], $matches_loaded);
+            preg_match('/Active:\s*(\S+\s+\S+)/', $result['result'][0], $matches_active);
+            preg_match('/since (\w{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \w{3});/', $result['result'][0], $matches_start_time);
+            preg_match('/Loaded:.*\/blea2mqtt\.service; ([^;]+);/', $result['result'][0], $matches_loaded);
 
             $this->checkAndUpdateCmd('serviceStatus', (strpos($matches_active[1], 'running') !== false) ? 1 : 0);
+            $this->checkAndUpdateCmd('serviceStatus', (strpos($matches_active[1], 'running') !== false) ? 1 : 0);
+            $connected = ($result) ? 1 : 0;
+            $this->checkAndUpdateCmd('sshStatus', $connected);
         } elseif ($_distrib == 'Darwin') {
             $cmd = self::getLaunchctlCommand('print');
             $result = $this->sendRequest('CMD', array($cmd));
+        log::add(__CLASS__, 'debug', __FUNCTION__ . __(' resultat ', __FILE__)  . json_encode($result));
+            $result['connected'] = ($result['connected']) ? 1 : 0;
             $this->checkAndUpdateCmd('sshStatus', $result['connected']);
             if (preg_match('/state\s*=\s*([\w-]+)/', $result['result'][0], $matches)) {
                  $this->checkAndUpdateCmd('serviceStatus', ($matches[1] == 'running') ? 1 : 0);
@@ -559,16 +561,18 @@ class blea2mqtt extends eqLogic {
 
     /**
      * Envoie un événement en fonction des options spécifiées.
-     * 
+     *
      * @param array $_options Un tableau contenant les options de l'événement.
      * @return void
      */
   	public static function sendEvent($_options) {
+        //log::add(__CLASS__, 'debug', __FUNCTION__ . __(' début ', __FILE__)  . json_encode($_options));
 		$cmd = cmd::byId(intval($_options['event_id']));
 		if (!is_object($cmd)) {
 			return;
 		}
         for ($i = 0; $i < $_options['count_eqLogic']; $i++) {
+
             if ($_options['value'] == $_options['eqLogic_hostname::'.$i]) {
                 $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
                 if (!is_object($eqLogic) && $eqLogic->getIsEnable() == 0) {
@@ -576,8 +580,20 @@ class blea2mqtt extends eqLogic {
                 }
                 $lastReceived = $eqLogic->getStatus('lastReceivedFrom', 0);
                 if (strtotime($_options['datetime']) > strtotime($lastReceived)) {
-                    log::add(__CLASS__, 'debug', 'lastReceivedFrom save ' . $_options['value']);
+                    log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne ', __FILE__) . $_options['value']);
                     $eqLogic->setStatus('lastReceivedFrom', $_options['datetime']);
+                }
+            } else if (preg_match('/receivedFrom:([^,]+)/', $_options['value'], $matches)) {
+                if ($matches[1] == $_options['eqLogic_hostname::'.$i]) {
+                    $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
+                    if (!is_object($eqLogic) && $eqLogic->getIsEnable() == 0) {
+                        return;
+                    }
+                    $lastReceived = $eqLogic->getStatus('lastReceivedFrom', 0);
+                    if (strtotime($_options['datetime']) > strtotime($lastReceived)) {
+                        log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne ', __FILE__) . $matches[1]);
+                        $eqLogic->setStatus('lastReceivedFrom', $_options['datetime']);
+                    }
                 }
             }
         }
@@ -585,21 +601,21 @@ class blea2mqtt extends eqLogic {
 
     /**
      * Récupère l'objet listener pour cette instance de classe.
-     * 
+     *
      * @return listener|null L'objet listener pour cette instance de classe ou null s'il n'existe pas.
      */
-    private function getListener() {
-        return listener::byClassAndFunction(__CLASS__, 'sendEvent', array('id' => intval($this->getId())));
+    private static function getPluginListeners($_option = '') {
+        return listener::byClassAndFunction(__CLASS__, 'sendEvent', $_option);
     }
 
     /**
      * Supprime l'objet listener pour cette instance de classe s'il existe.
-     * 
+     *
      * @return void
      */
-    private function removeListener() {
+    private static function removeListener($_option) {
         log::add(__CLASS__, 'debug', __FUNCTION__ . __(' Suppression des listeners : ', __FILE__) . $this->getHumanName());
-        if (is_object($this->getListener())) {
+        if (is_object($listener = self::getPluginListeners($_option))) {
             $listener->remove();
         }
     }
@@ -609,7 +625,8 @@ class blea2mqtt extends eqLogic {
      *
      * @return void
      */
-    public function checkMQTTPublish() {
+    public static function checkMQTTPublish() {
+        log::add(__CLASS__, 'debug', __FUNCTION__ . __(' Création du listener : ', __FILE__));
         $broker = self::getBrokerInfos();
         $list = array();
         $eqLogics = eqLogic::byType(__CLASS__);
@@ -620,8 +637,7 @@ class blea2mqtt extends eqLogic {
                 $list['eqLogic_hostname::'.$i] = $eqLogics[$i]->getConfiguration('hostname');
             }
         }
-        $listener = $this->getListener();
-        if (!is_object($listener)) {
+        if (!is_object($listener = self::getPluginListeners())) {
             $listener = new listener();
             $listener->setClass(__CLASS__);
             $listener->setFunction('sendEvent');
@@ -637,9 +653,10 @@ class blea2mqtt extends eqLogic {
                         if (strpos($eqL->getTopic(), $broker['topic']) !== false) { //check if match the topic
                             log::add(__CLASS__, 'debug', 'EqLogic jMQTT found with topic : ' . $broker['topic']. ' => '  . json_encode(utils::o2a($eqL)));
                             foreach ($eqL->getCmd('info') as $allCmd) {
-                                log::add(__CLASS__, 'debug', 'cmds found => '  . json_encode(utils::o2a($allCmd)));
+                                log::add(__CLASS__, 'debug', ' listener cmds search => '  . json_encode(utils::o2a($allCmd)));
                               //trouver la commande avec le topic receivedFrom
                                 if ($allCmd->getConfiguration('jsonPath') == '[receivedFrom]') {
+                                    log::add(__CLASS__, 'debug', 'listener cmds found => '  . json_encode(utils::o2a($allCmd)));
                                     $listener->addEvent('#'.$allCmd->getId().'#');
                                 } else {
                                     $value = $allCmd->execCmd();
@@ -663,8 +680,9 @@ class blea2mqtt extends eqLogic {
                     if (strpos($eqL->getLogicalId(), $broker['topic']) !== false) { //check if match the topic
                         log::add(__CLASS__, 'debug', 'EqLogic jMQTT found with topic5 : ' . $broker['topic']. ' => '  . json_encode(utils::o2a($eqL)));
                         foreach ($eqL->getCmd('info') as $allCmd) {
-                            log::add(__CLASS__, 'debug', 'cmds found => '  . json_encode(utils::o2a($allCmd)));
+                            log::add(__CLASS__, 'debug', 'cmds search => '  . json_encode(utils::o2a($allCmd)));
                             if (strpos($allCmd->getLogicalId(), 'receivedFrom') !== false) {
+                                log::add(__CLASS__, 'debug', 'cmds found => '  . json_encode(utils::o2a($allCmd)));
 					            $listener->addEvent('#'.$allCmd->getId().'#');
                             }
                         }
@@ -677,8 +695,9 @@ class blea2mqtt extends eqLogic {
                     if (strpos($eqL->getConfiguration('topic'), $broker['topic']) !== false) { //check if match the topic
                         log::add(__CLASS__, 'debug', 'EqLogic jMQTT found with topic5 : ' . $broker['topic']. ' => '  . json_encode(utils::o2a($eqL)));
                         foreach ($eqL->getCmd('info') as $allCmd) {
-                            log::add(__CLASS__, 'debug', 'cmds found => '  . json_encode(utils::o2a($allCmd)));
+                            log::add(__CLASS__, 'debug', 'cmds search => '  . json_encode(utils::o2a($allCmd)));
                             if (strpos($allCmd->getConfiguration('topic'), '{receivedFrom}') !== false) {
+                                log::add(__CLASS__, 'debug', 'cmds found => '  . json_encode(utils::o2a($allCmd)));
 					            $listener->addEvent('#'.$allCmd->getId().'#');
                             }
                         }
@@ -686,7 +705,7 @@ class blea2mqtt extends eqLogic {
                 }
             }
         } elseif ($broker['plugin'] == 'external') {
-          
+
         }
         $listener->save();
     }
@@ -777,7 +796,7 @@ class blea2mqttCmd extends cmd {
         $system = $eqLogic->getConfiguration('system');
         log::add('blea2mqtt', 'debug', __FUNCTION__ . __(' action sur : ',__FILE__) . $this->getLogicalId() . __(', system : ', __FILE__) . $system .  __(' et options : ', __FILE__) . json_encode($_options));
         $execCmd = array();
-        
+
         switch ($this->getLogicalId()) {
             case 'startService':
                 if ($system == 'Linux') {
@@ -836,6 +855,19 @@ class blea2mqttCmd extends cmd {
         }
     }
 
+    public function decodeJsonMsg($payload) {
+		$jsonArray = json_decode($payload, true);
+		if (is_array($jsonArray) && json_last_error() == JSON_ERROR_NONE) {
+			return $jsonArray;
+        } else {
+			if (json_last_error() == JSON_ERROR_NONE) {
+                log::add('blea2mqtt', 'info', __FUNCTION__ . __(' Problème de format JSON sur la commande #%s#: Le message reçu n\'est pas au format JSON: ',__FILE__) . $this->getHumanName());
+            } else {
+                log::add('blea2mqtt', 'warning', __FUNCTION__ . sprintf(__("Problème de format JSON sur la commande #%1\$s#: %2\$s (%3\$d)", __FILE__), $this->getHumanName(), json_last_error_msg(), json_last_error()));
+            }
+            return null;
+		}
+	}
     /*     * **********************Getteur Setteur*************************** */
 
 }

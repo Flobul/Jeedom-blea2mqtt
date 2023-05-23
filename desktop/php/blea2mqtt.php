@@ -11,9 +11,9 @@ $eqLogics = eqLogic::byType($plugin->getId());
 span.hiddenAsCard i.fas.fa-sign-in-alt				{ margin-right:10px;vertical-align:top;margin-top:-3px;margin-left:-5px!important; }
 span.hiddenAsCard i.fas.status-circle				{ margin-right:6px; }
 span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;position: absolute;margin-left: 20px; }
-
+div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
 </style>
-
+  
 <div class="row row-overflow">
 	<!-- Page d'accueil du plugin -->
 	<div class="col-xs-12 eqLogicThumbnailDisplay">
@@ -29,6 +29,21 @@ span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;pos
 				<i class="fas fa-wrench"></i>
 				<br>
 				<span>{{Configuration}}</span>
+			</div>
+			<div class="cursor eqLogicAction logoSecondary" id="bt_healthblea2mqtt">
+				<i class="fas fa-medkit"></i>
+				<br>
+				<span>{{Santé}}</span>
+			</div>
+			<div class="cursor eqLogicAction logoSecondary" data-action="checkMqtt">
+				<i class="fas fa-check-square "></i>
+				<br>
+				<span>{{Listeners MQTT}}</span>
+			</div>
+			<div class="cursor pluginAction logoSecondary" id="bt_documentationblea2mqtt" data-action="openLocation" data-location="<?= $plugin->getDocumentation() ?>">
+				<i class="fas fa-book-reader"></i>
+				<br>
+				<span>{{Documentation}}</span>
 			</div>
 		</div>
 		<legend><i class="fas fa-broadcast-tower"></i> {{Mes antennes blea2mqtt}}</legend>
@@ -220,7 +235,7 @@ span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;pos
 									<span class="eqLogicAttr label label-info" data-l1key="status" data-l2key="lastReceivedFrom"></span>
 								</div>
 							  </div>
-
+                            
                               <div class="form-group">
 								<label class="col-sm-4 control-label">{{Système d'exploitation}}</label>
 								<div class="col-sm-6">

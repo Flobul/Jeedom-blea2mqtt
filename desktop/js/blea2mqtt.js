@@ -86,6 +86,29 @@ function addCmdToTable(_cmd) {
   })
 }
 
+$('.eqLogicAction[data-action=checkMqtt]').on('click',function(){
+    $.ajax({
+        type: "POST",
+        url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
+        data: {
+            action: "checkMqtt"
+        },
+        async: false,
+        dataType: 'json',
+        error: function (request, status, error) {
+            handleAjaxError(request, status, error,$('#div_alert'));
+        },
+        success: function (data) {
+          console.log(data)
+            if (data.state != 'ok') {
+                $('#div_alert').showAlert({message: data.result, level: 'danger'});
+                return;
+            }
+            $('#div_alert').showAlert({message: '{{Envoi réussi}}', level: 'success'});
+        }
+    });
+});
+
 $('.eqLogicAttr[data-action=installDependancy]').on('click',function(){
     $.ajax({
         type: "POST",
@@ -113,4 +136,16 @@ $('.eqLogicAttr[data-action=installDependancy]').on('click',function(){
     });
 
   $('#md_modal').dialog({title: "{{SSH commandes}}"}).load('index.php?v=d&modal=log.display&log=blea2mqtt_dep').dialog('open')
+});
+
+
+$('#bt_healthblea2mqtt').off('click').on('click', function() {
+  $('#md_modal').dialog({
+    title: "{{Santé blea2mqtt}}"
+  });
+  $('#md_modal').load('index.php?v=d&plugin=blea2mqtt&modal=health').dialog('open');
+});
+
+$('.pluginAction[data-action=openLocation]').on('click', function () {
+    window.open($(this).attr("data-location"), "_blank", null);
 });

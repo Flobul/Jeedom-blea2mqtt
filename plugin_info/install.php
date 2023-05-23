@@ -19,12 +19,15 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
 
 // Fonction exécutée automatiquement après l'installation du plugin
 function blea2mqtt_install() {
+    blea2mqtt::checkMQTTPublish();
 }
 
 // Fonction exécutée automatiquement après la mise à jour du plugin
 function blea2mqtt_update() {
+    blea2mqtt::checkMQTTPublish();
 }
 
 // Fonction exécutée automatiquement après la suppression du plugin
 function blea2mqtt_remove() {
+    blea2mqtt::removeListener();
 }

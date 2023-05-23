@@ -33,6 +33,11 @@ try {
         ajax::success(blea2mqtt::installDependancy(init('id')));
     }
 
+    if (init('action') == 'checkMqtt') {
+        blea2mqtt::checkMQTTPublish();
+        ajax::success();
+    }
+  
     throw new Exception(__('Aucune méthode correspondante à', __FILE__) . ' : ' . init('action'));
     /*     * *********Catch exeption*************** */
 }
