@@ -10,7 +10,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
 <style>
 span.hiddenAsCard i.fas.fa-sign-in-alt				{ margin-right:10px;vertical-align:top;margin-top:-3px;margin-left:-5px!important; }
 span.hiddenAsCard i.fas.status-circle				{ margin-right:6px; }
-span.blea2mqttIconStatus i.fas		 				{ top: 20px;font-size: 0.9em !important;position: absolute;margin-left: 20px; }
+span.blea2mqttIconStatus i.fas		 				{ top: 26px;font-size: 1em !important;position: absolute;margin-left: 18px; }
 div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
 </style>
   
@@ -77,7 +77,7 @@ div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
                 if ($temps > 720) {
                     echo '    <i class="fas fa-times" title="{{Déconnecté}}</br>{{Depuis }}'.$temps.'{{ s}}" style="color:red"></i>';
                 } else {
-                    echo '    <i class="fas fa-wifi" title="{{Connecté}}" style="color:green"></i>';
+                    echo '    <i class="fas fa-wifi fa-rotate-90" title="{{Connecté}}" style="color:green"></i>';
                 }
 				echo '</span>';
 				echo '</div>';
