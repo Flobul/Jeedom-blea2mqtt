@@ -70,7 +70,7 @@ if [[ "$UNAME" == "Darwin" ]]; then
 elif [[ $UNAME == "Linux" ]]; then
 
   wget https://raw.githubusercontent.com/Flobul/nodejs_install/main/install_nodejs.sh -O $BASEDIR/install_nodejs.sh &>/dev/null
-  installVer='16' 	#NodeJS major version to be installed
+  installVer='18' 	#NodeJS major version to be installed
 
   step 10 "Mise à jour APT"
   tryOrStop sudo apt-get update

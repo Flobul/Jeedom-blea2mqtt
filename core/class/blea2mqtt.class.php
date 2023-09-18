@@ -94,7 +94,9 @@ class blea2mqtt extends eqLogic {
 
         $result = $eqLogic->sendRequest('PUT', array($path . $file1, $path . $file2), array($pwd . $file1, $pwd . $file2));
         if ($result['result'] && $result['result'][0]) {
-            $exec = $eqLogic->sendRequest('CMD', array('bash -c \'' . $pwd . $file1 . ' "' . $pass . '" "' . $eqLogic->getConfiguration('library', self::GITHUB_FLOBUL_BLEA2MQTT) . '"\''));
+          $cmd = "bash -c '" . $pwd . $file1 . " " . $pass . " " . $eqLogic->getConfiguration('library', self::GITHUB_FLOBUL_BLEA2MQTT) . "'";
+		  $cmd = $eqLogic->getCmdSudo($cmd, true);
+            $exec = $eqLogic->sendRequest('CMD', array($cmd));
             if ($exec['result'][0]) {
                 $result['result']['cmd'] = true;
                 $exec = $eqLogic->sendRequest('CMD', self::editEnvConfigFile($pwd));
@@ -303,7 +305,7 @@ class blea2mqtt extends eqLogic {
      *
      * @return string la commande à exécuter avec ou sans sudo
      */
-    protected function getCmdSudo($cmd, $_sudo) {
+    public function getCmdSudo($cmd, $_sudo) {
         if ($this->getConfiguration('user', 'root') != 'root' && $_sudo) { // si non root ou sudo=true
             return "echo '".$this->getConfiguration('pwd')."' | sudo -S $cmd";
         } else {
@@ -352,7 +354,7 @@ class blea2mqtt extends eqLogic {
 				foreach ($_cmd as $i => $cmd){
                     $output['result'][$i] = false;
                     if ($_action == 'CMD') {
-					    $cmd = self::getCmdSudo($cmd, $_sudo);
+					    $cmd = $this->getCmdSudo($cmd, $_sudo);
 					    log::add(__CLASS__, 'info', __FUNCTION__ . __(' Commande par SSH : ',__FILE__) . $cmd);
 
                         $stream = ssh2_exec($cx, $cmd);
@@ -575,23 +577,24 @@ class blea2mqtt extends eqLogic {
 
             if ($_options['value'] == $_options['eqLogic_hostname::'.$i]) {
                 $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
-                if (!is_object($eqLogic) && $eqLogic->getIsEnable() == 0) {
+                if (!is_object($eqLogic) || $eqLogic->getIsEnable() == 0) {
                     return;
                 }
                 $lastReceived = $eqLogic->getStatus('lastReceivedFrom', 0);
                 if (strtotime($_options['datetime']) > strtotime($lastReceived)) {
-                    log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne ', __FILE__) . $_options['value']);
+                    log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne value=', __FILE__) . $_options['value']);
                     $eqLogic->setStatus('lastReceivedFrom', $_options['datetime']);
                 }
             } else if (preg_match('/receivedFrom:([^,]+)/', $_options['value'], $matches)) {
+
                 if ($matches[1] == $_options['eqLogic_hostname::'.$i]) {
                     $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
-                    if (!is_object($eqLogic) && $eqLogic->getIsEnable() == 0) {
+                    if (!is_object($eqLogic) || $eqLogic->getIsEnable() == 0) {
                         return;
                     }
                     $lastReceived = $eqLogic->getStatus('lastReceivedFrom', 0);
                     if (strtotime($_options['datetime']) > strtotime($lastReceived)) {
-                        log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne ', __FILE__) . $matches[1]);
+                        log::add(__CLASS__, 'debug', __FUNCTION__ . __(' pour l\'antenne array=', __FILE__) . $matches[1]);
                         $eqLogic->setStatus('lastReceivedFrom', $_options['datetime']);
                     }
                 }
@@ -641,8 +644,8 @@ class blea2mqtt extends eqLogic {
             $listener = new listener();
             $listener->setClass(__CLASS__);
             $listener->setFunction('sendEvent');
-            $listener->setOption($list);
         }
+        $listener->setOption($list);
         $listener->emptyEvent();
         if ($broker['plugin'] == 'jMQTT') {
             $eqBrokers = jMQTT::getBrokers();
@@ -718,7 +721,7 @@ class blea2mqtt extends eqLogic {
      *
      * @return array Les commandes à exécuter pour éditer le fichier de configuration .env
      */
-    public function editEnvConfigFile($_dir, $_debug = false) {
+    public static function editEnvConfigFile($_dir, $_debug = false) {
         $cred = self::getBrokerInfos();
 
         $cmd = ["sh -c 'cat > $_dir/blea2mqtt/.env' << EOL
