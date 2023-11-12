@@ -48,7 +48,7 @@ $return = blea2mqtt::getBrokerFromJeedom();
 					<?php
                        if (is_array($return)) {
                            foreach ($return as $mqttPlugin) {
-                               $mqttPlugin['eq_id'] = $mqttPlugin['eq_id'] ? $mqttPlugin['eq_id'] : '';
+                               $mqttPlugin['eq_id'] = isset($mqttPlugin['eq_id']) ? $mqttPlugin['eq_id'] : '';
                                echo '<option value="' . $mqttPlugin['plugin'] . '::' . $mqttPlugin['eq_id'] . '">' . $mqttPlugin['plugin'] . ' > [' . $mqttPlugin['ip'] . ':'. $mqttPlugin['port'] . ']</option>';
                            }
                        }
@@ -56,7 +56,7 @@ $return = blea2mqtt::getBrokerFromJeedom();
             </select>
         </div>
         <div id="manualBroker" class="form-group">
-          <label class="col-lg-4 control-label">{{Adresse du broker}} 
+          <label class="col-lg-4 control-label">{{Adresse du broker}}
             <sup><i class="fa fa-question-circle tooltips" title="{{Paramètres d'accès au Broker.}}"></i>
             </sup>
           </label>
@@ -80,7 +80,7 @@ $return = blea2mqtt::getBrokerFromJeedom();
           </div>
 
           <div class="form-group">
-            <label class="col-lg-4 control-label">{{Authentification}} 
+            <label class="col-lg-4 control-label">{{Authentification}}
               <sup><i class="fa fa-question-circle tooltips" title="{{Nom d'utilisateur et Mot de passe permettant de se connecter au Broker.<br/>Remplir ces champs n'est obligatoire que si le Broker est configuré pour.}}"></i>
               </sup>
             </label>
@@ -95,7 +95,7 @@ $return = blea2mqtt::getBrokerFromJeedom();
     </div>
   </fieldset>
 </form>
-                      
+
 <script>
   $('.configKey[data-l1key=mode]').off('change').on('change', function() {
     $('.blea2mqttMode').hide()
@@ -170,7 +170,7 @@ $return = blea2mqtt::getBrokerFromJeedom();
   })
 
   $('#bt_blea2mqttUninstallMosquitto').off('click').on('click', function() {
-    bootbox.confirm('{{Confirmez-vous la désinstallation du broker Mosquitto local?}}', function(result) {
+    bootbox.confirm('{{Confirmez-vous la désinstallation du broker Mosquitto local ?}}', function(result) {
       if (result) {
         $.ajax({
           type: "POST",
