@@ -546,7 +546,6 @@ class blea2mqtt extends eqLogic {
             preg_match('/Loaded:.*\/blea2mqtt\.service; ([^;]+);/', $result['result'][0], $matches_loaded);
 
             $this->checkAndUpdateCmd('serviceStatus', (strpos($matches_active[1], 'running') !== false) ? 1 : 0);
-            $this->checkAndUpdateCmd('serviceStatus', (strpos($matches_active[1], 'running') !== false) ? 1 : 0);
             $connected = ($result) ? 1 : 0;
             $this->checkAndUpdateCmd('sshStatus', $connected);
         } elseif ($_distrib == 'Darwin') {
