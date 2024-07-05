@@ -37,7 +37,7 @@ class blea2mqtt extends eqLogic {
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.31';
+    public static $_pluginVersion = '0.32';
 
     /**
      * URL du dépôt GitHub pour le projet Flobul/Blea2Mqtt.
@@ -420,10 +420,10 @@ class blea2mqtt extends eqLogic {
                         $array = array(
                             'plugin'   => 'jMQTT',
                             'eq_id'    => $broker->getId(),
-                            'ip'       => $broker->getConfiguration(jMQTT::CONF_KEY_MQTT_ADDRESS),
-                            'port'     => $broker->getConfiguration(jMQTT::CONF_KEY_MQTT_PORT),
-                            'user'     => $broker->getConfiguration(jMQTT::CONF_KEY_MQTT_USER),
-                            'password' => $broker->getConfiguration(jMQTT::CONF_KEY_MQTT_PASS)
+                            'ip'       => $broker->getConfiguration(jMQTTConst::CONF_KEY_MQTT_ADDRESS),
+                            'port'     => $broker->getConfiguration(jMQTTConst::CONF_KEY_MQTT_PORT),
+                            'user'     => $broker->getConfiguration(jMQTTConst::CONF_KEY_MQTT_USER),
+                            'password' => $broker->getConfiguration(jMQTTConst::CONF_KEY_MQTT_PASS)
                         );
                         $return[] = $array;
                         if ($_class && $_class == 'jMQTT' && $_jmqttId && $_jmqttId == $array['eq_id']) {
@@ -574,7 +574,7 @@ class blea2mqtt extends eqLogic {
 		}
         for ($i = 0; $i < $_options['count_eqLogic']; $i++) {
 
-            if ($_options['value'] == $_options['eqLogic_hostname::'.$i]) {
+            if (isset($_options['eqLogic_hostname::'.$i]) && $_options['value'] == $_options['eqLogic_hostname::'.$i]) {
                 $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
                 if (!is_object($eqLogic) || $eqLogic->getIsEnable() == 0) {
                     return;
@@ -586,7 +586,7 @@ class blea2mqtt extends eqLogic {
                 }
             } else if (preg_match('/receivedFrom:([^,]+)/', $_options['value'], $matches)) {
 
-                if ($matches[1] == $_options['eqLogic_hostname::'.$i]) {
+                if (isset($_options['eqLogic_hostname::'.$i]) && $matches[1] == $_options['eqLogic_hostname::'.$i]) {
                     $eqLogic = eqLogic::byId(intval($_options['eqLogic_id::'.$i]));
                     if (!is_object($eqLogic) || $eqLogic->getIsEnable() == 0) {
                         return;
