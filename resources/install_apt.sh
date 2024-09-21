@@ -79,17 +79,17 @@ elif [[ $UNAME == "Linux" ]]; then
   cd ${BASEDIR};
   try sudo DEBIAN_FRONTEND=noninteractive apt-get install -y lsb-release build-essential apt-utils git curl gcc g++ make gpg
 
-  step 30 "Installation de Yarn"
-  try curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/yarn.gpg
-  try echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-  tryOrStop sudo apt-get update
-  try sudo DEBIAN_FRONTEND=noninteractive apt-get install -y yarn
-
-  step 50 "Installation de Nodejs"
+  step 30 "Installation de Nodejs"
   . ${BASEDIR}/install_nodejs.sh ${installVer}
 
-  step 70 "Récupération de blea2mqtt"
+  step 30 "Installation de Yarn"
+  #try curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/yarn.gpg
+  #try echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+  #tryOrStop sudo apt-get update
+  #try sudo DEBIAN_FRONTEND=noninteractive apt-get install -y yarn
+  tryOrStop sudo npm install --global yarn
 
+  step 70 "Récupération de blea2mqtt"
   if [ ! -d ${BASEDIR}/blea2mqtt ]; then
     tryOrStop sudo git clone ${GITHUB}
     cd blea2mqtt
@@ -110,7 +110,7 @@ elif [[ $UNAME == "Linux" ]]; then
   [Service]
   Type=simple
   WorkingDirectory=${BASEDIR}/blea2mqtt
-  ExecStart=/usr/bin/sudo /usr/bin/yarn --cwd ${BASEDIR}/blea2mqtt start
+  ExecStart=/usr/bin/sudo /usr/local/bin/yarn --cwd ${BASEDIR}/blea2mqtt start
   User=root
   Group=root
   TimeoutStopSec=900
