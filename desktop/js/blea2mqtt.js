@@ -141,11 +141,24 @@ $('.eqLogicAttr[data-action=installDependancy]').on('click',function(){
 
 $('#bt_healthblea2mqtt').off('click').on('click', function() {
   $('#md_modal').dialog({
-    title: "{{Santé blea2mqtt}}"
+    title: "{{Santé des antennes blea2mqtt}}"
   });
   $('#md_modal').load('index.php?v=d&plugin=blea2mqtt&modal=health').dialog('open');
 });
 
+$('#bt_devicesblea2mqtt').off('click').on('click', function() {
+  $('#md_modal').dialog({
+    title: "{{Santé des sondes blea2mqtt}}"
+  });
+  $('#md_modal').load('index.php?v=d&plugin=blea2mqtt&modal=devices').dialog('open');
+});
+
+
+
 $('.pluginAction[data-action=openLocation]').on('click', function () {
     window.open($(this).attr("data-location"), "_blank", null);
 });
+
+function printEqLogic(_eqLogic) {
+  buildSelectHost(_eqLogic.configuration.host_id);
+};

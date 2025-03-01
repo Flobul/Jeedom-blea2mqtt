@@ -33,7 +33,12 @@ div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
 			<div class="cursor eqLogicAction logoSecondary" id="bt_healthblea2mqtt">
 				<i class="fas fa-medkit"></i>
 				<br>
-				<span>{{Santé}}</span>
+				<span>{{Santé des antennes}}</span>
+			</div>
+			<div class="cursor eqLogicAction logoSecondary" id="bt_devicesblea2mqtt">
+				<i class="fas fa-medkit"></i>
+				<br>
+				<span>{{Santé des sondes}}</span>
 			</div>
 			<div class="cursor eqLogicAction logoSecondary" data-action="checkMqtt">
 				<i class="fas fa-check-square "></i>
@@ -158,44 +163,29 @@ div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
 							</div>
 
 							<legend><i class="fas fa-cogs"></i> {{Paramètres spécifiques}}</legend>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{{Adresse IP}}</label>
-                                <div class="col-sm-3">
-                                    <input type="text" class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="ip"/>
-                                </div>
-                                <label class="col-sm-2 control-label">{{Port}}</label>
-                                <div class="col-sm-3">
-                                    <input type="text" class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="port"/>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">{{Utilisateur}}</label>
-                                <div class="col-sm-3">
-                                    <input type="text" class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="user"/>
-                                </div>
-                                <label class="col-sm-2 control-label">{{Mot de passe}}</label>
-                                <div class="col-sm-3">
-                                    <input type="password" class="eqLogicAttr form-control inputPassword" data-l1key="configuration" data-l2key="pwd"/>
+                            <div class="form-group sshHosts">
+                                <label class="col-sm-3 control-label help" data-help="{{Choisissez un hôte dans la liste ou créez un nouveau}}">{{Hôte}}</label>
+                                <div class="col-sm-4">
+                                    <div class="input-group">
+                                        <select class="eqLogicAttr form-control roundedLeft sshmanagerHelper" data-helper="list" data-l1key="configuration" data-l2key="host_id">
+
+                                        </select>
+                                        <span class="input-group-btn">
+                                            <a class="btn btn-default cursor roundedRight sshmanagerHelper" data-helper="add" title="{{Ajouter un nouvel hôte}}">
+                                                <i class="fas fa-plus-circle"></i>
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
+
 	                        <div class="form-group">
  								<label class="col-sm-3 control-label">{{Répertoire racine d'installation}}</label>
  								<div class="col-sm-8">
  									<input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="homeDir" type="text" placeholder="{{Chemin complet du répertoire d'installation}}">
  								</div>
  							</div>
-	                        <div class="form-group">
- 								<label class="col-sm-3 control-label">{{Fichier clé publique}}</label>
- 								<div class="col-sm-8">
- 									<input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="pubkey" type="text" placeholder="{{Chemin complet vers le fichier contenant la clé publique}}">
- 								</div>
- 							</div>
- 							<div class="form-group">
- 								<label class="col-sm-3 control-label">{{Fichier clé privée}}</label>
- 								<div class="col-sm-8">
- 									<input class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="privkey" type="text" placeholder="{{Chemin complet vers le fichier contenant la clé privée}}">
- 								</div>
- 							</div>
+
                             <div class="form-group">
                                 <label class="col-sm-3 control-label">{{Nom de l'antenne}}</label>
                                 <div class="col-sm-4">
@@ -285,6 +275,7 @@ div.logoSecondary[data-action="checkMqtt"]			{ color: orange; }
 	</div><!-- /.eqLogic -->
 </div><!-- /.row row-overflow -->
 
+<?php include_file('desktop', 'sshmanager.helper', 'js', 'sshmanager'); // do not change anything on this line ?>
 <!-- Inclusion du fichier javascript du plugin (dossier, nom_du_fichier, extension_du_fichier, id_du_plugin) -->
 <?php include_file('desktop', 'blea2mqtt', 'js', 'blea2mqtt');?>
 <!-- Inclusion du fichier javascript du core - NE PAS MODIFIER NI SUPPRIMER -->

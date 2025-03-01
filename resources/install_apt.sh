@@ -38,13 +38,17 @@ if [[ "$UNAME" == "Darwin" ]]; then
     echo "[ 19% ] : Brew est installé sur ce système : $(/opt/homebrew/bin/brew -v | head -n1)"
   fi
   step 20 "Vérification des packages nécessaires"
-  try /opt/homebrew/bin/brew install git
-
+  if [[ !$(command -v git) = "" ]]; then
+    try /opt/homebrew/bin/brew install git
+  fi
   step 30 "Vérification de node"
-  tryOrStop /opt/homebrew/bin/brew install node
-
+  if [[ !$(command -v node) = "" ]]; then
+    tryOrStop /opt/homebrew/bin/brew install node
+  fi
   step 40 "Vérification de yarn"
-  tryOrStop /opt/homebrew/bin/brew install yarn
+  if [[ !$(command -v yarn) = "" ]]; then
+    tryOrStop /opt/homebrew/bin/brew install yarn
+  fi
 
   step 50 "Récupération de blea2mqtt"
   if [ ! -d ${BASEDIR}/blea2mqtt ]; then
@@ -102,6 +106,7 @@ elif [[ $UNAME == "Linux" ]]; then
 
   step 80 "Création fichier de configuration"
   try sudo cp ${BASEDIR}/blea2mqtt/.env.example ${BASEDIR}/blea2mqtt/.env
+  YARNBIN=$(which yarn)
 
   sudo bash -c "cat >> /tmp/jeedom/blea2mqtt.service" << EOL
   [Unit]
@@ -110,12 +115,13 @@ elif [[ $UNAME == "Linux" ]]; then
   [Service]
   Type=simple
   WorkingDirectory=${BASEDIR}/blea2mqtt
-  ExecStart=/usr/bin/sudo /usr/local/bin/yarn --cwd ${BASEDIR}/blea2mqtt start
+  ExecStart=/usr/bin/sudo ${YARNBIN} --cwd ${BASEDIR}/blea2mqtt start
   User=root
   Group=root
   TimeoutStopSec=900
   TimeoutSec=900
   Restart=on-failure
+  RestartSec=10
 
   [Install]
   WantedBy=multi-user.target

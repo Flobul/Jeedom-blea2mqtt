@@ -18,21 +18,6 @@
 /* * ***************************Includes********************************* */
 require_once __DIR__  . '/../../../../core/php/core.inc.php';
 
-if (!class_exists('ComposerAutoloaderInitBlea2mqtt')) {
-    require_once dirname(__FILE__) . '/../../vendor/autoload.php';
-}
-
-use phpseclib3\Net\SSH2;
-use phpseclib3\Net\SFTP;
-use phpseclib3\Crypt\PublicKeyLoader;
-
-if (!defined('NET_SSH2_LOGGING')) {
-    define('NET_SSH2_LOGGING', 2);
-}
-if (!defined('NET_SFTP_LOGGING')) {
-    define('NET_SFTP_LOGGING', 2);
-}
-
 class blea2mqtt extends eqLogic {
     /*     * *************************Attributs****************************** */
 
@@ -42,17 +27,11 @@ class blea2mqtt extends eqLogic {
      */
     public static $_widgetPossibility = array();
 
-    /*
-     * Permet de crypter/décrypter automatiquement des champs de configuration du plugin
-     * Exemple : "param1" & "param2" seront cryptés mais pas "param3"
-     */
-    public static $_encryptConfigKey = array('pwd');
-
     /**
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.40.00';
+    public static $_pluginVersion = '0.50.00';
 
     /**
      * URL du dépôt GitHub pour le projet Flobul/Blea2Mqtt.
@@ -89,9 +68,12 @@ class blea2mqtt extends eqLogic {
             return false;
         }
         log::add(__CLASS__, 'debug', __FUNCTION__ .' début ' . $_id);
-
-        $user = $eqLogic->getConfiguration('user');
-        $pass = $eqLogic->getConfiguration('pwd');
+        $sshmanager = eqLogic::byId($eqLogic->getConfiguration('host_id'));
+        if (!is_object($sshmanager)) {
+            return false;
+        }
+        $user = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_USERNAME));
+        $pass = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_PASSWORD));
 
         $system = $eqLogic->sendRequest(array('uname -s'));
         $hostname = $eqLogic->sendRequest(array('hostname'));
@@ -104,21 +86,22 @@ class blea2mqtt extends eqLogic {
         $file1 = '/install_apt.sh';
         $file2 = '/install_brew.sh';
         $pwd = $eqLogic->getHomeDir();
-		$path = dirname(__FILE__) . '/../../resources';
-	    exec('sudo /bin/echo "Début des dépendances ' . $equipement . '" > ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
+		$path = dirname(__FILE__, 3) . '/resources';
+            log::add(__CLASS__, 'debug', __FUNCTION__ .' envoie de ' . $path . $file1 . ' => ' . $pwd . $file1);
+	    exec('sudo /bin/echo "Début des dépendances ' . $eqLogic->getName() . '" > ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
+        $result = sshmanager::sendFile($eqLogic->getConfiguration('host_id'), dirname(__FILE__, 3) . '/resources' . $file1, $pwd . $file1);
+        $result = sshmanager::sendFile($eqLogic->getConfiguration('host_id'), dirname(__FILE__, 3) . '/resources' . $file2, $pwd . $file2);
 
-        $result = $eqLogic->sendFiles($path . $file1, $pwd . $file1);
-        $result = $eqLogic->sendFiles($path . $file2, $pwd . $file2);
         if ($result) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ .' $result ' . $result);
           $eqLogic->sendRequest(array('chmod +x install_*.sh', 'ps aux | grep "blea2mqtt.git" | awk \'{print $2}\' |  xargs sudo kill -9'));
 
-          $cmd = "bash -c '" . $pwd . $file1 . " " . $pass . " " . $eqLogic->getConfiguration('library', self::GITHUB_FLOBUL_BLEA2MQTT) . "' > /tmp/jeedom/blea2mqtt_dep";
-
-          $cmd = $eqLogic->getCmdSudo($cmd, true);
+          $cmd = 'bash -c \'' . $pwd . $file1 . ' "' . $pass . '" "' . $eqLogic->getConfiguration('library', self::GITHUB_FLOBUL_BLEA2MQTT) . '"\' > /tmp/jeedom/blea2mqtt_dep';
+          $cmd = $eqLogic->getCmdSudo($cmd, true) . ' &';
           $eqLogic->sendRequest(array($cmd));
 
           $progress = 0;
-          $timeout = 600; // 10 minutes en secondes
+          $timeout = 300; // 5 minutes en secondes
           $startTime = microtime(true); // Démarrer le chronomètre
 
           while ($progress < 100) {
@@ -127,14 +110,17 @@ class blea2mqtt extends eqLogic {
                   log::add(__CLASS__, 'error', 'Timeout de 10 minutes atteint sans que la progression soit à 100%.');
                   break; // Sortir de la boucle
               }
-              $result = $eqLogic->sendRequest(array('cat /tmp/jeedom/blea2mqtt/dependance'));
-                log::add(__CLASS__, 'debug', 'TESEGFDDFFF ' . json_encode($result));
+              $result = $eqLogic->sendRequest(array('cat /tmp/jeedom/blea2mqtt_dep'));
+                  log::add(__CLASS__, 'debug', 'cat TETETETTTE ' . json_encode($result));
 
-              if (!empty($result['result'])) {
-                  $progress = intval(trim($result['result'])); // Lire et convertir la progression
+              if ($result && $result['result'] && !empty($result['result'])) {
+                  $res = preg_match_all('/\[(\s|)(\d+)%\s\]/', $result['result'][0], $matches);
+                  $progress = max(array_map('intval', $matches[2]));
+
 	              //exec('sudo /bin/echo "Progression de l\'installation : ' . $progr . '%" > ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
-                  log::clear(__CLASS__ . '_dep');
-                  $resultDep = $eqLogic->getFiles(log::getPathToLog(__CLASS__ . '_dep') ,'/tmp/jeedom/blea2mqtt_dep');
+                  //log::clear(__CLASS__ . '_dep');
+                  $resultDep = sshmanager::getFile($eqLogic->getConfiguration('host_id'),'/tmp/jeedom/blea2mqtt_dep',  log::getPathToLog(__CLASS__ . '_dep') );
+                  log::add(__CLASS__, 'debug', 'TETETETTTE ' . json_encode($resultDep));
 
                   //$resultDep = $eqLogic->sendRequest(array('cat /tmp/jeedom/blea2mqtt_dep'));
 	              //exec('sudo /bin/echo "' . str_replace('"','\"',$resultDep['result']) . '" > ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
@@ -149,7 +135,7 @@ class blea2mqtt extends eqLogic {
 
             //if ($exec['result'][0]) {
                 //$result['result']['cmd'] = true;
-              $exec = $eqLogic->sendRequest(self::editEnvConfigFile($pwd));
+              $exec = $eqLogic->sendRequest(array(self::editEnvConfigFile($pwd)));
               if ($system['result'][0] == 'Linux') {
                   $exec = $eqLogic->sendRequest(array(
                       'systemctl daemon-reload',
@@ -160,7 +146,7 @@ class blea2mqtt extends eqLogic {
               } elseif ($system['result'][0] == 'Darwin') {
                   $brew = $eqLogic->sendRequest(array('bash -c \'' . $pwd . $file2 . ' "' . $pass . '" "' . $user . '"\''));
                   $exec = $eqLogic->sendRequest(array(
-                        self::getLaunchctlCommand('bootstrap')
+                      self::getLaunchctlCommand('bootstrap')
                   ));
                   $eqLogic->getServiceStatus('Darwin');
               }
@@ -196,19 +182,8 @@ class blea2mqtt extends eqLogic {
      * @return void
      */
     public function preUpdate() {
-		if ($this->getConfiguration('ip') == '') {
-			throw new Exception(__('L\'adresse IP ne peut être vide', __FILE__));
-		}
-		if ($this->getConfiguration('port') == '') {
-			throw new Exception(__('Le port ne peut être vide', __FILE__));
-		}
-		if ($this->getConfiguration('user') == '') {
-			throw new Exception(__('L\'utilisateur ne peut être vide', __FILE__));
-		}
-		if ($this->getConfiguration('pwd') == '') {
-            if ($this->getConfiguration('pubkey') == '' && $this->getConfiguration('privkey') == '') {
-			    throw new Exception(__('Le mot de passe ou clés privée/publique ne peuvent être vides', __FILE__));
-            }
+		if ($this->getConfiguration('host_id') == '') {
+			throw new Exception(__('L\'hôte ne peut pas être vide', __FILE__));
 		}
     }
 
@@ -230,8 +205,12 @@ class blea2mqtt extends eqLogic {
     public function preSave() {
         $lib = $this->getConfiguration('library', false);
         $homedir = $this->getConfiguration('homeDir', false);
-        $user = $this->getConfiguration('user', false);
         $system = $this->getConfiguration('system', false);
+        $sshmanager = eqLogic::byId($this->getConfiguration('host_id'));
+        if (!is_object($sshmanager)) {
+            return false;
+        }
+        $user = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_USERNAME));
 
         if (!$lib) {
             $this->setConfiguration('library', self::GITHUB_FLOBUL_BLEA2MQTT);
@@ -297,8 +276,15 @@ class blea2mqtt extends eqLogic {
      */
     public function getHomeDir()
     {
-        $user = $this->getConfiguration('user');
-        return $this->getConfiguration('homeDir', ($user == 'root') ? '/root' : '/var/' . $user);
+        $path = $this->getConfiguration('homeDir', '');
+        if ($path == '') {
+            $sshmanager = eqLogic::byId($this->getConfiguration('host_id'));
+            if (is_object($sshmanager)) {
+                $user = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_USERNAME));
+                $path = ($user == 'root') ? '/root' : '/var/' . $user;
+            }
+        }
+        return $this->getConfiguration('homeDir', $path);
     }
 
     /**
@@ -356,246 +342,40 @@ class blea2mqtt extends eqLogic {
      * @return string la commande à exécuter avec ou sans sudo
      */
     public function getCmdSudo($cmd, $_sudo) {
-        if ($this->getConfiguration('user', 'root') != 'root' && $_sudo) { // si non root ou sudo=true
+        $sshmanager = eqLogic::byId($this->getConfiguration('host_id'));
+        if (!is_object($sshmanager)) {
+            return false;
+        }
+        $user = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_USERNAME));
+
+        if ($user != 'root' && $_sudo) { // si non root ou sudo=true
             return "echo '".$this->getConfiguration('pwd')."' | sudo -S $cmd";
         } else {
             return $cmd;
         }
     }
 
-    /**
-     * Envoie une requête SSH à l'équipement.
-     *
-     * @param string $_action      L'action à effectuer (CMD, GET ou PUT).
-     * @param array  $_cmd         Le tableau de commandes à exécuter.
-     * @param mixed  $_localFile   Le nom du fichier à récupérer ou à envoyer.
-     * @param bool   $_sudo        Indique si la commande doit être exécutée en mode sudo.
-     *
-     * @return array               Les résultats de l'exécution de la commande SSH.
-     *                             Le tableau contient :
-     *                             - 'connected' : booléen indiquant si la connexion SSH est établie.
-     *                             - 'result' : un tableau contenant le résultat de chaque commande exécutée.
-     *                             - 'exit' : la sortie de la commande 'exit' de la connexion SSH.
-     *                             - 'time' : la durée du traitement en secondes.
-     */
     public function sendRequest($_cmd) {
-    //public function executeCmd($_cmd) {
 		$output = array();
 		$timeStart = microtime(true);
-		$cnx_ssh = '';
-        $equipement = $this->getName();
-        $ip = $this->getConfiguration('ip');
-        $connection = new SSH2($ip, $this->getConfiguration('port'));
-
-        if ($cnx_ssh != 'KO') {
-            if ($this->getConfiguration('pwd', '') == '') {
-                try {
-                    $password = PublicKeyLoader::load(shell_exec("sudo cat ".$this->getConfiguration('pubkey')), shell_exec("sudo cat ".$this->getConfiguration('privkey'), '')); //root permissions needed
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] PublicKeyLoader :: '. $equipement .' :: OK');
-                } catch (Exception $e) {
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] PublicKeyLoader :: '. $equipement .' :: '. $e->getMessage());
-                    $password = '';
-                }
-            } else {
-               $password = $this->getConfiguration('pwd');
-            }
-            try {
-                if (!$connection->login($this->getConfiguration('user',' root'), $password)) {
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] Login ERROR :: '. $equipement . ' :: ' . $user);
-                    $cnx_ssh = 'KO';
-                }
-            } catch (Exception $e) {
-                log::add(__CLASS__, 'debug', '[SSH-CMD] Authentification SSH :: '. $equipement .' :: '. $e->getMessage());
-                $cnx_ssh = 'KO';
-            }
+        try {
             foreach ($_cmd as $i => $cmd) {
-                log::add(__CLASS__, 'info', __('Commande par SSH2 ', __FILE__) . '"' . $cmd . '"' .  __(' sur ', __FILE__) . $ip);
-		        try {
-                    $result = $connection->exec($cmd);
-
-                    $output['result'][$i] = trim($result);
-                    log::add(__CLASS__, 'info', __FUNCTION__ . __(' Résultat cmd SSH : ',__FILE__) . $result);
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] Resultat :: '. $equipement .' :: ' . $result);
-                } catch (Exception $e) {
-                    $result = '';
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] Resultat Exception :: '. $equipement .' :: ' . $e->getMessage());
-                    log::add(__CLASS__, 'debug', '[SSH-CMD] Resultat Exception Log :: '. $equipement .' :: ' . $connection->getLog());
-                }
-                log::add(__CLASS__, 'info', __('Sortie commande par SSH2 ', __FILE__) . $result .  __(' sur ', __FILE__) . $ip);
+                log::add(__CLASS__, 'debug', $this->getName() . __(' Envoi de la commande ', __FILE__) . $i . ' ' . $cmd);
+                $result = sshmanager::executeCmds($this->getConfiguration('host_id'), $cmd);
+                $output['result'][$i] = trim($result);
             }
-            $connection->disconnect();
+        } catch (RuntimeException $ex) {
+            log::add(__CLASS__, 'debug', $this->getName() . __(' Erreur Runtime du cron distant', __FILE__) . $ex->getMessage());
+            $result = '';
+        } catch (Throwable $th) {
+            log::add(__CLASS__, 'debug', $this->getName() . __(' Erreur générale du cron distant', __FILE__) . $th->getMessage());
+            $result = '';
         }
 
 		$timeEnd = microtime(true);
 		$output['time'] = round($timeEnd-$timeStart,3);
 		log::add(__CLASS__, 'info', 'Durée du traitement d\'envoi de commande : ' . $output['time'] . 's');
-		return $output;
-	}
-  /*public function sendRequest($_action, $_cmd, $_localFile = false, $_sudo = false) {
-
-		$output = array();
-        $equipement = $this->getName();
-        $ip      = $this->getConfiguration('ip');
-        $port    = $this->getConfiguration('port');
-		$user    = $this->getConfiguration('user', 'root');
-		$pwd     = $this->getConfiguration('pwd', '');
-		$pubkey  = $this->getConfiguration('pubkey');
-		$privkey = $this->getConfiguration('privkey');
-        $keys    = ($pwd == '') ? array('hostkey' => 'ssh-rsa') : null;
-        $equipement = $this->getName() . ' ' . $ip . '::' . $port;
-		$timeStart = microtime(true);
-        $cx = new SSH2($ip, $port);
-		$cnx_ssh = '';
-
-        $output['connected'] = false;
-        if ($pwd == '') {
-            try {
-                $password = PublicKeyLoader::load($pubkey, $privkey);
-                log::add(__CLASS__, 'debug', '[SSH-CMD] PublicKeyLoader :: '. $equipement .' :: OK');
-            } catch (Exception $e) {
-                log::add(__CLASS__, 'debug', '[SSH-CMD] PublicKeyLoader :: '. $equipement .' :: '. $e->getMessage());
-                $password = '';
-            }
-        } else {
-           $password = $pwd;
-        }
-        try {
-            if (!$cx->login($user, $password)) {
-                log::add(__CLASS__, 'debug', '[SSH-CMD] Login ERROR :: '. $equipement . ' :: ' . $user);
-                $cnx_ssh = 'KO';
-            }
-        } catch (Exception $e) {
-            log::add(__CLASS__, 'debug', '[SSH-CMD] Authentification SSH :: '. $equipement .' :: '. $e->getMessage());
-            $cnx_ssh = 'KO';
-        }
-
-        foreach ($_cmd as $i => $cmd) {
-            $output['result'][$i] = false;
-            if ($_action == 'CMD') {
-                $cmd = $this->getCmdSudo($cmd, $_sudo);
-                log::add(__CLASS__, 'info', __FUNCTION__ . __(' Commande par SSH : ',__FILE__) . $cmd);
-
-                $stream = $cx->exec($cmd);
-
-                //stream_set_chunk_size($stream, 1024); // Définir la taille maximale de chaque chunk de données
-                exec('sudo /bin/echo -e "--- $(/bin/date +\'%F %T\'):\n" >> ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
-                exec('sudo /bin/echo "' . $user . '@' . $ip . ':~' . (($user != 'root' || $_sudo)?'#':'$') . ' ' . $cmd . '" >> ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
-                $stre = '';
-                while($line = fgets($stream)) {
-                //log::add(__CLASS__, 'info', __FUNCTION__ . __(' Commande par SSH1 : ',__FILE__) . $line);
-                    flush();
-                    exec('sudo /bin/echo "' . $line . '" >> ' . log::getPathToLog(__CLASS__ . '_dep') . ' 2>&1 &');
-                    $stre .= $line;
-                }
-                $output['result'][$i] = trim($stre);
-                log::add(__CLASS__, 'info', __FUNCTION__ . __(' Résultat cmd SSH : ',__FILE__) . $stre);
-        }
-
-        $output['result']['exit'] = $stream;
-
-		$timeEnd = microtime(true);
-		$output['time'] = round($timeEnd-$timeStart,3);
-		log::add(__CLASS__, 'info', __FUNCTION__ . __(' Durée du traitement d\'envoi des commandes : ', __FILE__) . $output['time'] . 's');
-		return $output;
-	}*/
-
-
-    public function getFiles($_local, $_target)
-    {
-        /**
-         *
-         * Récupère un fichier à un emplacement donné
-         *
-         * @param			$_local        string        Emplacement distant
-         * @param			$_target       string        Emplacement local
-         * @return			               bool          Vrai
-         */
-        $equipement = $this->getName();
-
-        $sftp = new SFTP($this->getConfiguration('ip'), $this->getConfiguration('port'));
-        if ($this->getConfiguration('pwd', '') == '') {
-            try {
-                $password = PublicKeyLoader::load(shell_exec("sudo cat ".$this->getConfiguration('pubkey')), shell_exec("sudo cat ".$this->getConfiguration('privkey'), '')); //root permissions needed
-                log::add(__CLASS__, 'debug', '[SFTP-GET] PublicKeyLoader :: '. $equipement .' :: OK');
-            } catch (Exception $e) {
-                log::add(__CLASS__, 'debug', '[SFTP-GET] PublicKeyLoader :: '. $equipement .' :: '. $e->getMessage());
-                $password = '';
-            }
-        } else {
-           $password = $this->getConfiguration('pwd');
-        }
-        if (!$sftp->login($this->getConfiguration('user'), $password)) {
-            log::add(__CLASS__, 'debug', __('Authentification SSH KO pour ', __FILE__) . $this->getName());
-            return false;
-        }
-
-        try {
-		    if ($sftp->get($_target, $_local, SFTP::SOURCE_LOCAL_FILE) === false) {
-                log::add(__CLASS__, 'debug', __('Erreur de réception du fichier de ', __FILE__) . $_local . ' à ' . $_target . __(' erreur ', __FILE__) . json_encode($sftp->getSFTPLog()));
-			    $sftp->disconnect();
-                return false;
-            } else {
-			    $sftp->disconnect();
-                log::add(__CLASS__, 'info', __('Fichier récupéré avec succès sur ', __FILE__) . $this->getConfiguration('ip'));
-            }
-        } catch (\Exception $e) {
-            log::add(__CLASS__, 'debug', __('Erreur de réception du fichier de ', __FILE__) . $_local . ' à ' . $_target . ' => ' . json_encode(utils::o2a($e)));
-        }
-
-        if (trim($output) != '') {
-            log::add(__CLASS__, 'debug', $output);
-        }
-
-        return true;
-    }
-
-    public function sendFiles($_local, $_target)
-    {
-        /**
-         * Envoie un fichier à un emplacement donné
-         *
-         * @param			$_local        string        Emplacement distant
-         * @param			$_target       string        Emplacement local
-         * @return			               bool          Vrai
-         */
-        $equipement = $this->getName();
-
-        $sftp = new SFTP($this->getConfiguration('ip'), $this->getConfiguration('port'));
-        if ($this->getConfiguration('pwd', '') == '') {
-            try {
-                $password = PublicKeyLoader::load(shell_exec("sudo cat ".$this->getConfiguration('pubkey')), shell_exec("sudo cat ".$this->getConfiguration('privkey'), '')); //root permissions needed
-                log::add(__CLASS__, 'debug', '[SFTP-PUT] PublicKeyLoader :: '. $equipement .' :: OK');
-            } catch (Exception $e) {
-                log::add(__CLASS__, 'debug', '[SFTP-PUT] PublicKeyLoader :: '. $equipement .' :: '. $e->getMessage());
-                $password = '';
-            }
-        } else {
-           $password = $this->getConfiguration('pwd');
-        }
-
-        if (!$sftp->login($this->getConfiguration('user'), $password)) {
-            log::add(__CLASS__, 'debug', __('Authentification SSH KO pour ', __FILE__) . $this->getName());
-            return false;
-        }
-
-        try {
-		    if ($sftp->put($_target, $_local, SFTP::SOURCE_LOCAL_FILE) === false) {
-                log::add(__CLASS__, 'debug', __('Erreur d\'envoi du fichier de ', __FILE__) . $_local . ' à ' . $_target  );
-			    $sftp->disconnect();
-                return false;
-            } else {
-			    $sftp->disconnect();
-                log::add(__CLASS__, 'info', __('Fichier envoyé avec succès sur ', __FILE__) . $this->getConfiguration('ip'));
-            }
-        } catch (\Exception $e) {
-            log::add(__CLASS__, 'debug', __('Erreur d\'envoi du fichier de ', __FILE__) . $_local . ' à ' . $_target . ' => ' . json_encode(utils::o2a($e)));
-        }
-
-        if (trim($output) != '') {
-            log::add(__CLASS__, 'debug', $output);
-        }
-
-        return true;
+        return $output;
     }
 
     /**
@@ -747,7 +527,7 @@ class blea2mqtt extends eqLogic {
             $cmd = self::getLaunchctlCommand('print');
             $result = $this->sendRequest(array($cmd));
         log::add(__CLASS__, 'debug', __FUNCTION__ . __(' resultat ', __FILE__)  . json_encode($result));
-            $result['connected'] = ($result['connected']) ? 1 : 0;
+            $result['connected'] = ($result) ? 1 : 0;
             $this->checkAndUpdateCmd('sshStatus', $result['connected']);
             if (preg_match('/state\s*=\s*([\w-]+)/', $result['result'][0], $matches)) {
                  $this->checkAndUpdateCmd('serviceStatus', ($matches[1] == 'running') ? 1 : 0);
@@ -1036,7 +816,14 @@ class blea2mqttCmd extends cmd {
                     $execCmd[] = blea2mqtt::getSystemctlCommand('enable');
                     $execCmd[] = blea2mqtt::getSystemctlCommand('restart');
                 } elseif ($system == 'Darwin') {
-                    $execCmd[] = 'bash -c \'' . dirname(__FILE__) . '/../../resources/install_brew.sh "' . $eqLogic->getConfiguration('pwd') . '" "' . $eqLogic->getConfiguration('user') . '"\'';
+                    $sshmanager = eqLogic::byId($eqLogic->getConfiguration('host_id'));
+                    if (!is_object($sshmanager)) {
+                        return false;
+                    }
+                    $user = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_USERNAME));
+                    $password = utils::decrypt($sshmanager->getConfiguration(sshmanager::CONFIG_PASSWORD));
+
+                    $execCmd[] = 'bash -c \'' . dirname(__FILE__) . '/../../resources/install_brew.sh "' . $password . '" "' . $user . '"\'';
                     $execCmd[] = blea2mqtt::getLaunchctlCommand('bootstrap');
                 }
                 break;
@@ -1046,7 +833,7 @@ class blea2mqttCmd extends cmd {
 
         log::add('blea2mqtt', 'debug', __FUNCTION__ . __(' getLaunchctlCommandgetLaunchctlCommand : ',__FILE__) . json_encode($execCmd));
         if (count($execCmd) > 0) {
-            $exec = $eqLogic->sendRequest($execCmd);
+            $exec = $eqLogic->sendRequest(array($execCmd));
             log::add('blea2mqtt', 'debug', __FUNCTION__ . __(' result : ',__FILE__) . json_encode($exec));
             $eqLogic->getServiceStatus($system);
         }

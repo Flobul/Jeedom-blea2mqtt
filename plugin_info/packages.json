@@ -1,20 +1,8 @@
 {
-  "pre-install": {
-  },
-  "apt": {
-    "mosquitto-clients": {}
-  },
-  "pip3": {
-  },
-  "npm": {
-  },
-  "yarn": {
-  },
-  "plugin": {
-  },
-  "post-install": {
-  }
-  "composer" : {
-    "plugins/blea2mqtt/" : {}
-  }
+    "apt": {
+        "mosquitto-clients": {}
+    },
+    "plugin": {
+        "sshmanager" : {}
+    }
 }
