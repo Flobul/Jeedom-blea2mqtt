@@ -197,9 +197,9 @@ $broker = blea2mqtt::getBrokerInfos();
 
             echo '<td>' . $eqArray['mac']['value'] . '</td>';
 
-            $label = $eqArray['Battery']['value'] < 30 ? 'danger' : $eqArray['Battery']['value'] < 50 ? 'warning' : 'success';
+            $label = $eqArray['Battery']['value'] < 30 ? 'danger' : ($eqArray['Battery']['value'] < 50 ? 'warning' : 'success');
             echo "<td><span class='label label-{$label} eqLogicAttr simple' style='font-size: 1em; cursor: default;' data-cmd_id='".$eqArray['Battery']['id']."'>" . $eqArray['Battery']['value'] . " %</span></td>";
-             $rssiClass = $eqArray['RSSI']['value'] <= -150 ? 'none' : $eqArray['RSSI']['value'] <= -90 ? 'danger': $eqArray['RSSI']['value'] <= -80 ? 'warning' : 'info';
+             $rssiClass = $eqArray['RSSI']['value'] <= -150 ? 'none' : ($eqArray['RSSI']['value'] <= -90 ? 'danger' : ($eqArray['RSSI']['value'] <= -80 ? 'warning' : 'info'));
 
             echo '<td class="label label-'.$rssiClass.'"><span class="eqLogicAttr custom rssi" data-cmd_id="'.$eqArray['RSSI']['id'].'">' . $eqArray['RSSI']['value'] . ' dBm</span>';
             echo "<span class='eqLogicAttr custom antenna' data-value='".$eqArray['receivedFrom']['value']."' data-cmd_id='".$eqArray['receivedFrom']['id']."'>(" . $eqArray['receivedFrom']['value'] . ")</span></td>";

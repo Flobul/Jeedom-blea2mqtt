@@ -1,5 +1,11 @@
 # Plugin blea2mqtt
 
+[![License](https://img.shields.io/github/license/Flobul/Jeedom-blea2mqtt?style=flat-square)](https://github.com/Flobul/Jeedom-blea2mqtt)
+[![Language](https://img.shields.io/github/languages/top/Flobul/Jeedom-blea2mqtt?style=flat-square)](https://github.com/Flobul/Jeedom-blea2mqtt)
+[![Last commit](https://img.shields.io/github/last-commit/Flobul/Jeedom-blea2mqtt?style=flat-square)](https://github.com/Flobul/Jeedom-blea2mqtt/commits)
+[![Open issues](https://img.shields.io/github/issues/Flobul/Jeedom-blea2mqtt?style=flat-square)](https://github.com/Flobul/Jeedom-blea2mqtt/issues)
+[![Open pull requests](https://img.shields.io/github/issues-pr/Flobul/Jeedom-blea2mqtt?style=flat-square)](https://github.com/Flobul/Jeedom-blea2mqtt/pulls)
+
 Le plugin blea2mqtt permet d'installer le paquet ["blea2mqtt"](https://github.com/Flobul/blea2mqtt) sur des machines distantes accessibles en SSH et d'intégrer les périphériques Bluetooth Low Energy (BLE) dans le système Jeedom en utilisant le protocole MQTT pour communiquer avec les périphériques BLE.
 Le but principal étant d'uniformiser et d'automatiser l'installation pour créer des antennes BLEA qui soient compatibles avec les publications Tasmota.
 

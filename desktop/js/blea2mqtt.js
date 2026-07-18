@@ -15,14 +15,10 @@
 */
 
 /* Permet la réorganisation des commandes dans l'équipement */
-$("#table_cmd").sortable({
-  axis: "y",
-  cursor: "move",
-  items: ".cmd",
-  placeholder: "ui-state-highlight",
-  tolerance: "intersect",
-  forcePlaceholderSize: true
-})
+const bleaCommandBody = document.querySelector('#table_cmd tbody');
+if (bleaCommandBody && typeof Sortable !== 'undefined') {
+  new Sortable(bleaCommandBody, {draggable: '.cmd', animation: 150});
+}
 
 /* Fonction permettant l'affichage des commandes dans l'équipement */
 function addCmdToTable(_cmd) {
@@ -70,93 +66,87 @@ function addCmdToTable(_cmd) {
   }
   tr += '<i class="fas fa-minus-circle pull-right cmdAction cursor" data-action="remove" title="{{Supprimer la commande}}"></i></td>'
   tr += '</tr>'
-  $('#table_cmd tbody').append(tr)
-  var tr = $('#table_cmd tbody tr').last()
-  jeedom.eqLogic.buildSelectCmd({
-    id:  $('.eqLogicAttr[data-l1key=id]').value(),
-    filter: {type: 'info'},
-    error: function (error) {
-      $('#div_alert').showAlert({message: error.message, level: 'danger'})
-    },
-    success: function (result) {
-      tr.find('.cmdAttr[data-l1key=value]').append(result)
-      tr.setValues(_cmd, '.cmdAttr')
-      jeedom.cmd.changeType(tr, init(_cmd.subType))
-    }
-  })
+	  if (!bleaCommandBody) return;
+	  bleaCommandBody.insertAdjacentHTML('beforeend', tr)
+	  const newRow = bleaCommandBody.lastElementChild
+	  jeedom.eqLogic.buildSelectCmd({
+	    id: document.querySelector('.eqLogicAttr[data-l1key="id"]').jeeValue(),
+	    filter: {type: 'info'},
+	    error: function (error) {
+	      jeedomUtils.showAlert({message: error.message, level: 'danger'})
+	    },
+	    success: function (result) {
+	      newRow.querySelector('.cmdAttr[data-l1key="value"]')?.insertAdjacentHTML('beforeend', result)
+	      newRow.setJeeValues(_cmd, '.cmdAttr')
+	      jeedom.cmd.changeType(newRow, init(_cmd.subType))
+	    }
+	  })
 }
 
-$('.eqLogicAction[data-action=checkMqtt]').on('click',function(){
-    $.ajax({
+document.querySelector('.eqLogicAction[data-action="checkMqtt"]')?.addEventListener('click', function() {
+	    domUtils.ajax({
         type: "POST",
         url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
         data: {
             action: "checkMqtt"
         },
-        async: false,
-        dataType: 'json',
-        error: function (request, status, error) {
-            handleAjaxError(request, status, error,$('#div_alert'));
-        },
-        success: function (data) {
-          console.log(data)
-            if (data.state != 'ok') {
-                $('#div_alert').showAlert({message: data.result, level: 'danger'});
-                return;
-            }
-            $('#div_alert').showAlert({message: '{{Envoi réussi}}', level: 'success'});
-        }
-    });
+	        dataType: 'json',
+	        error: function (request, status, error) {
+	            handleAjaxError(request, status, error);
+	        },
+	        success: function (data) {
+	            if (data.state != 'ok') {
+	                jeedomUtils.showAlert({message: data.result, level: 'danger'});
+	                return;
+	            }
+	            jeedomUtils.showAlert({message: '{{Envoi réussi}}', level: 'success'});
+	        }
+	    });
 });
 
-$('.eqLogicAttr[data-action=installDependancy]').on('click',function(){
-    $.ajax({
+document.querySelector('.eqLogicAttr[data-action="installDependancy"]')?.addEventListener('click', function() {
+	    domUtils.ajax({
         type: "POST",
         url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
         data: {
             action: "installDependancy",
-            id: $('.eqLogicAttr[data-l1key=id]').value()
-        },
-        async: true,
-        dataType: 'json',
-        error: function (request, status, error) {
-            handleAjaxError(request, status, error,$('#div_alert'));
-        },
-        success: function (data) {
-            if (data.state != 'ok') {
-                $('#div_alert').showAlert({message: data.result, level: 'danger'});
-                return;
-            }
-            if (data.result.result && data.result.result[0]) {
-                $('#div_alert').showAlert({message: '{{Envoi réussi}}', level: 'success'});
-            } else {
-                $('#div_alert').showAlert({message: '{{Envoi échoué}}', level: 'danger'});
-            }
-        }
-    });
+	            id: document.querySelector('.eqLogicAttr[data-l1key="id"]').jeeValue()
+	        },
+	        dataType: 'json',
+	        error: function (request, status, error) {
+	            handleAjaxError(request, status, error);
+	        },
+	        success: function (data) {
+	            if (data.state != 'ok') {
+	                jeedomUtils.showAlert({message: data.result, level: 'danger'});
+	                return;
+	            }
+	            if (data.result.result && data.result.result[0]) {
+	                jeedomUtils.showAlert({message: '{{Envoi réussi}}', level: 'success'});
+	            } else {
+	                jeedomUtils.showAlert({message: '{{Envoi échoué}}', level: 'danger'});
+	            }
+	        }
+	    });
 
-  $('#md_modal').dialog({title: "{{SSH commandes}}"}).load('index.php?v=d&modal=log.display&log=blea2mqtt_dep').dialog('open')
+	  jeeDialog.dialog({id: 'md_modal', title: '{{SSH commandes}}', contentUrl: 'index.php?v=d&modal=log.display&log=blea2mqtt_dep'});
 });
 
 
-$('#bt_healthblea2mqtt').off('click').on('click', function() {
-  $('#md_modal').dialog({
-    title: "{{Santé des antennes blea2mqtt}}"
-  });
-  $('#md_modal').load('index.php?v=d&plugin=blea2mqtt&modal=health').dialog('open');
+document.getElementById('bt_healthblea2mqtt')?.addEventListener('click', function() {
+	  jeeDialog.dialog({id: 'md_modal', title: '{{Santé des antennes blea2mqtt}}', contentUrl: 'index.php?v=d&plugin=blea2mqtt&modal=health'});
 });
 
-$('#bt_devicesblea2mqtt').off('click').on('click', function() {
-  $('#md_modal').dialog({
-    title: "{{Santé des sondes blea2mqtt}}"
-  });
-  $('#md_modal').load('index.php?v=d&plugin=blea2mqtt&modal=devices').dialog('open');
+document.getElementById('bt_devicesblea2mqtt')?.addEventListener('click', function() {
+	  jeeDialog.dialog({id: 'md_modal', title: '{{Santé des sondes blea2mqtt}}', contentUrl: 'index.php?v=d&plugin=blea2mqtt&modal=devices'});
 });
 
 
 
-$('.pluginAction[data-action=openLocation]').on('click', function () {
-    window.open($(this).attr("data-location"), "_blank", null);
+document.querySelectorAll('.pluginAction[data-action="openLocation"]').forEach(function(button) {
+	  button.addEventListener('click', function() {
+	    window.open(button.dataset.location, '_blank', 'noopener,noreferrer');
+	  });
 });
 
 function printEqLogic(_eqLogic) {

@@ -18,16 +18,32 @@
 require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
 
 include_file('core', 'authentification', 'php');
-if (!isConnect()) {
+if (!isConnect('admin')) {
   include_file('desktop', '404', 'php');
   die();
 }
 
 $return = blea2mqtt::getBrokerFromJeedom();
+$plugin = plugin::byId('blea2mqtt');
+$update = $plugin->getUpdate();
 
 ?>
-<form class="form-horizontal">
+<form class="form-horizontal" id="configuration_plugin_blea2mqtt">
   <fieldset>
+    <div class="form-group">
+      <legend><i class="fas fa-info-circle"></i> {{Général}}</legend>
+      <div class="col-lg-4">
+        <?php if (is_object($update)) { ?>
+          <div><label>{{Branche}} :</label> <span class="label label-info"><?php echo htmlspecialchars($update->getConfiguration('version', 'stable')); ?></span></div>
+          <div><label>{{Source}} :</label> <?php echo htmlspecialchars($update->getSource()); ?></div>
+          <div><label>{{Version}} :</label> <?php echo htmlspecialchars($update->getLocalVersion()); ?></div>
+        <?php } ?>
+      </div>
+      <div class="col-lg-6">
+        <a class="btn btn-success btn-sm" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($plugin->getDocumentation()); ?>"><i class="fas fa-book"></i> {{Documentation}}</a>
+        <a class="btn btn-default btn-sm" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($plugin->getChangelog()); ?>"><i class="fas fa-list"></i> {{Changelog}}</a>
+      </div>
+    </div>
     <legend><i class="fas fa-rss"></i>{{Paramètre du broker MQTT}}</legend>
     <div class="col-lg-6">
       <div class="form-group">
@@ -97,146 +113,49 @@ $return = blea2mqtt::getBrokerFromJeedom();
 </form>
 
 <script>
-  $('.configKey[data-l1key=mode]').off('change').on('change', function() {
-    $('.blea2mqttMode').hide()
-    $('.blea2mqttMode.' + $(this).value()).show()
-  })
+  const mqttProtocol = document.querySelector('.configKey[data-l1key="mqttProto"]');
+  const mqttPort = document.querySelector('.configKey[data-l1key="mqttPort"]');
+  const wsFields = document.querySelectorAll('.jmqttWsUrl');
+  const tlsField = document.getElementById('jmqttTls');
 
-  $('#bt_blea2mqttRestartMosquitto').off('click').on('click', function() {
-    $.ajax({
-      type: "POST",
-      url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
-      data: {
-        action: "restartMosquitto"
-      },
-      dataType: 'json',
-      error: function(error) {
-        $.fn.showAlert({
-          message: error.message,
-          level: 'danger'
-        })
-      },
-      success: function(data) {
-        if (data.state != 'ok') {
-          $.fn.showAlert({
-            message: data.result,
-            level: 'danger'
-          })
-          return
-        } else {
-          $('.pluginDisplayCard[data-plugin_id=' + $('#span_plugin_id').text() + ']').click()
-          $.fn.showAlert({
-            message: '{{Redemarrage réussie}}',
-            level: 'success',
-            emptyBefore: true
-          })
-        }
-      }
-    })
-  })
-
-  $('#bt_blea2mqttInstallMosquitto').off('click').on('click', function() {
-    $.ajax({
-      type: "POST",
-      url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
-      data: {
-        action: "installMosquitto"
-      },
-      dataType: 'json',
-      error: function(error) {
-        $.fn.showAlert({
-          message: error.message,
-          level: 'danger'
-        })
-      },
-      success: function(data) {
-        if (data.state != 'ok') {
-          $.fn.showAlert({
-            message: data.result,
-            level: 'danger'
-          })
-          return
-        } else {
-          $('.pluginDisplayCard[data-plugin_id=' + $('#span_plugin_id').text() + ']').click()
-          $.fn.showAlert({
-            message: '{{Installation réussie}}',
-            level: 'success',
-            emptyBefore: true
-          })
-
-        }
-      }
-    })
-  })
-
-  $('#bt_blea2mqttUninstallMosquitto').off('click').on('click', function() {
-    bootbox.confirm('{{Confirmez-vous la désinstallation du broker Mosquitto local ?}}', function(result) {
-      if (result) {
-        $.ajax({
-          type: "POST",
-          url: "plugins/blea2mqtt/core/ajax/blea2mqtt.ajax.php",
-          data: {
-            action: "uninstallMosquitto"
-          },
-          dataType: 'json',
-          error: function(error) {
-            $.fn.showAlert({
-              message: error.message,
-              level: 'danger'
-            })
-          },
-          success: function(data) {
-            if (data.state != 'ok') {
-              $.fn.showAlert({
-                message: data.result,
-                level: 'danger'
-              })
-              return
-            } else {
-              $.fn.showAlert({
-                message: '{{Désinstallation réussie}}',
-                level: 'success',
-                emptyBefore: true
-              })
-
-            }
-          }
-        })
-      }
-    })
-  })
-
-  $('.configKey[data-l1key=mqttProto]').change(function(){
-      switch ($(this).val()) {
+  function updateMqttProtocol() {
+      if (!mqttProtocol || !mqttPort) return;
+      switch (mqttProtocol.value) {
           case 'mqtts':
-              $('.configKey[data-l1key=mqttPort]').addClass('roundedRight').attr('placeholder', '8883');
-              $('.jmqttWsUrl').hide();
-              $('#jmqttTls').show();
+              mqttPort.classList.add('roundedRight');
+              mqttPort.placeholder = '8883';
+              wsFields.forEach(element => element.style.display = 'none');
+              if (tlsField) tlsField.style.display = '';
               break;
           case 'ws':
-              $('.configKey[data-l1key=mqttPort]').removeClass('roundedRight').attr('placeholder', '1884');
-              $('.jmqttWsUrl').show();
-              $('#jmqttTls').hide();
+              mqttPort.classList.remove('roundedRight');
+              mqttPort.placeholder = '1884';
+              wsFields.forEach(element => element.style.display = '');
+              if (tlsField) tlsField.style.display = 'none';
               break;
           case 'wss':
-              $('.configKey[data-l1key=mqttPort]').removeClass('roundedRight').attr('placeholder', '8884');
-              $('.jmqttWsUrl').show();
-              $('#jmqttTls').show();
+              mqttPort.classList.remove('roundedRight');
+              mqttPort.placeholder = '8884';
+              wsFields.forEach(element => element.style.display = '');
+              if (tlsField) tlsField.style.display = '';
               break;
-          default: // mqtt
-              $('.configKey[data-l1key=mqttPort]').addClass('roundedRight').attr('placeholder', '1883');
-              $('.jmqttWsUrl').hide();
-              $('#jmqttTls').hide();
+          default:
+              mqttPort.classList.add('roundedRight');
+              mqttPort.placeholder = '1883';
+              wsFields.forEach(element => element.style.display = 'none');
+              if (tlsField) tlsField.style.display = 'none';
               break;
       }
-  });
+  }
 
-  $('#sel_mqttBroker').change(function(e) {
-    if ($(this).value() == '') {
-        $('#manualBroker').show();
-    } else {
-        $('#manualBroker').hide();
-    }
-    console.log($(this).value())
-  });
+  function updateBrokerMode() {
+    const broker = document.getElementById('sel_mqttBroker');
+    const manualBroker = document.getElementById('manualBroker');
+    if (broker && manualBroker) manualBroker.style.display = broker.value === '' ? '' : 'none';
+  }
+
+  mqttProtocol?.addEventListener('change', updateMqttProtocol);
+  document.getElementById('sel_mqttBroker')?.addEventListener('change', updateBrokerMode);
+  updateMqttProtocol();
+  updateBrokerMode();
 </script>
