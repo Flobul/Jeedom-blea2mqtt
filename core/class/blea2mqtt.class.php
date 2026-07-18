@@ -31,7 +31,7 @@ class blea2mqtt extends eqLogic {
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.50.00';
+    public static $_pluginVersion = '0.50.01';
 
     /**
      * URL du dépôt GitHub pour le projet Flobul/Blea2Mqtt.
